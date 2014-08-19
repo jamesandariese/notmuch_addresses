@@ -1,13 +1,13 @@
 package notmuch_addresses
 
 import (
+	"code.google.com/p/go-sqlite/go1/sqlite3"
 	"errors"
+	"fmt"
+	"io"
+	"log"
 	"net/mail"
 	"os"
-	"code.google.com/p/go-sqlite/go1/sqlite3"
-	"log"
-	"io"
-	"fmt"
 )
 
 var (
@@ -63,7 +63,7 @@ func GatherAddresses(path string) (addresses int, err error) {
 	if err != nil {
 		return
 	}
-	for _,header := range headers {
+	for _, header := range headers {
 		tmp_addresses, err := msg.Header.AddressList(header)
 		if err == nil {
 			for _, address := range tmp_addresses {
@@ -74,7 +74,7 @@ func GatherAddresses(path string) (addresses int, err error) {
 					old_affected := conn.TotalRowsAffected()
 					err = conn.Exec(`UPDATE address
                                                             SET count = count + 1
-                                                          WHERE raw = ?`, 
+                                                          WHERE raw = ?`,
 						address.String())
 					if err != nil {
 						// Can't save this email address.
@@ -116,8 +116,8 @@ func QueryToStdout(substring string) error {
 	if conn == nil {
 		return ErrDatabaseNotOpen
 	}
-	
-	stmt, err := conn.Query(`SELECT raw FROM address WHERE raw LIKE ?;`, "%" + substring + "%")
+
+	stmt, err := conn.Query(`SELECT raw FROM address WHERE raw LIKE ?;`, "%"+substring+"%")
 	if err != nil {
 		if err == io.EOF {
 			return nil
@@ -125,7 +125,7 @@ func QueryToStdout(substring string) error {
 		return err
 	}
 	for ; err == nil; err = stmt.Next() {
-		var raw string;
+		var raw string
 		errb := stmt.Scan(&raw)
 		if errb != nil {
 			log.Print("Couldn't scan row from SQLite3: ", err)

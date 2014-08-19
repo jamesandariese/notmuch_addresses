@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/jamesandariese/notmuch_addresses"
 	//"net/mail"
+	"flag"
 	"fmt"
 	"os"
-	"flag"
 )
 
 func main() {
@@ -27,5 +27,3 @@ func main() {
 		panic("Couldn't close database: " + err.Error())
 	}
 }
-
-
