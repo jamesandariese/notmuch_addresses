@@ -111,3 +111,30 @@ func GatherAddresses(path string) (addresses int, err error) {
 	}
 	return
 }
+
+func QueryToStdout(substring string) error {
+	if conn == nil {
+		return ErrDatabaseNotOpen
+	}
+	
+	stmt, err := conn.Query(`SELECT raw FROM address WHERE raw LIKE ?;`, "%" + substring + "%")
+	if err != nil {
+		if err == io.EOF {
+			return nil
+		}
+		return err
+	}
+	for ; err == nil; err = stmt.Next() {
+		var raw string;
+		errb := stmt.Scan(&raw)
+		if errb != nil {
+			log.Print("Couldn't scan row from SQLite3: ", err)
+		} else {
+			fmt.Printf("%s\n", raw)
+		}
+	}
+	if err == io.EOF {
+		return nil
+	}
+	return err
+}
