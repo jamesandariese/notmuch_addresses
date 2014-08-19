@@ -6,6 +6,8 @@ import (
 	"os"
 	"code.google.com/p/go-sqlite/go1/sqlite3"
 	"log"
+	"io"
+	"fmt"
 )
 
 var (
@@ -32,6 +34,7 @@ func InitDatabase(path string) error {
 
 	conn.Exec(`CREATE TABLE IF NOT EXISTS address (
                        address TEXT,
+                       raw TEXT,
                        count INTEGER
                    );`)
 
@@ -71,7 +74,7 @@ func GatherAddresses(path string) (addresses int, err error) {
 					old_affected := conn.TotalRowsAffected()
 					err = conn.Exec(`UPDATE address
                                                             SET count = count + 1
-                                                          WHERE address = ?`, 
+                                                          WHERE raw = ?`, 
 						address.String())
 					if err != nil {
 						// Can't save this email address.
@@ -80,7 +83,9 @@ func GatherAddresses(path string) (addresses int, err error) {
 						break
 					}
 					if conn.TotalRowsAffected() == old_affected {
-						err = conn.Exec(`INSERT INTO address (address, count) VALUES (?,1);`, address.String())
+						err = conn.Exec(`INSERT INTO address (address, raw, count) VALUES (?,?,1);`,
+							address.Address,
+							address.String())
 						if err != nil {
 							log.Print("Couldn't save address", address, err)
 							break
@@ -91,9 +96,9 @@ func GatherAddresses(path string) (addresses int, err error) {
 					}
 					if conn.Commit() == nil {
 						if save {
-							log.Print("Saved new address", address)
+							log.Print("Saved new address ", address)
 						} else {
-							log.Print("Incremented address", address)
+							log.Print("Incremented address ", address)
 						}
 						break
 					} else {
