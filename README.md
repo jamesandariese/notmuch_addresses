@@ -15,13 +15,17 @@ I use this by adding the following to my .emacs:
     (notmuch-address-message-insinuate)
 
 Build:
+
     make
 
 Install:
+
     make install
 
 Uninstall:
+
     make uninstall
 
 Clean:
+
     make clean
