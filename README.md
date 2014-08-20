@@ -4,6 +4,8 @@ Parses and prints back addresses for use with notmuch.
 
 Written with golang for epic speeds and also for kicks and things.
 
+This will install to $HOME/bin/{query,save}_notmuch_addresses by default.
+
 I use this by adding the following to my .emacs:
 
     ; this can be done with M-x customize-variable notmuch-address-command
