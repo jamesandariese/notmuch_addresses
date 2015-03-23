@@ -113,28 +113,53 @@ func GatherAddresses(path string) (addresses int, err error) {
 }
 
 func QueryToStdout(substring string) error {
-	if conn == nil {
-		return ErrDatabaseNotOpen
+	ch, cherr := QueryToChannel(substring)
+	for {
+		select {
+		case raw, ok := <-ch:
+			if !ok {
+				return nil
+			}
+			fmt.Println(raw)
+		case err, ok := <-cherr:
+			if ok {
+				log.Println("Error querying addresses:", err)
+				return err
+			}
+		}
 	}
+}
 
-	stmt, err := conn.Query(`SELECT raw FROM address WHERE raw LIKE ?;`, "%"+substring+"%")
-	if err != nil {
+func QueryToChannel(substring string) (ch chan string, cherr chan error) {
+	ch = make(chan string)
+	cherr = make(chan error)
+	go func() {
+		defer close(cherr)
+		defer close(ch)
+		if conn == nil {
+			cherr <- ErrDatabaseNotOpen
+			return
+		}
+
+		stmt, err := conn.Query(`SELECT raw FROM address WHERE raw LIKE ? GROUP BY address ORDER BY count;`, "%"+substring+"%")
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+			cherr <- err
+			return
+		}
+		for ; err == nil; err = stmt.Next() {
+			var raw string
+			if errb := stmt.Scan(&raw); errb != nil {
+				cherr <- errb
+			} else {
+				ch <- raw
+			}
+		}
 		if err == io.EOF {
-			return nil
+			return
 		}
-		return err
-	}
-	for ; err == nil; err = stmt.Next() {
-		var raw string
-		errb := stmt.Scan(&raw)
-		if errb != nil {
-			log.Print("Couldn't scan row from SQLite3: ", err)
-		} else {
-			fmt.Printf("%s\n", raw)
-		}
-	}
-	if err == io.EOF {
-		return nil
-	}
-	return err
+	}()
+	return
 }
